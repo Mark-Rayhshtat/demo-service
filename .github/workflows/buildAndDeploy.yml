@@ -3,7 +3,7 @@ name: Deploy to Amazon EKS
 on:
   push:
     branches:
-    - main
+      - main
 
 env:
   AWS_REGION: eu-central-1
@@ -17,53 +17,55 @@ jobs:
     environment: lab
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build, tag, and push image to Amazon ECR
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        # Build a docker container and push it to ECR
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and push it to ECR
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Install Kustomize
-      run: |
-        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-        sudo mv kustomize /usr/local/bin/
-        kustomize version
+      - name: Install Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
 
-    - name: Update Kustomization with new image tag
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        cd demo/k8s
-        kustomize edit set image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        cat kustomization.yaml
+      - name: Update Kustomization with new image tag
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          pwd
+          ls -la
+          cd demo/k8s
+          kustomize edit set image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          cat kustomization.yaml
 
-    - name: Generate kubeconfig
-      run: |
-        {
-            echo 'EKS_CREDS<<EOF'
-            aws eks update-kubeconfig --region us-east-2 --name my-cluster --dry-run | base64
-            echo EOF
-        } >> $GITHUB_ENV
+      - name: Generate kubeconfig
+        run: |
+          {
+              echo 'EKS_CREDS<<EOF'
+              aws eks update-kubeconfig --region us-east-2 --name my-cluster --dry-run | base64
+              echo EOF
+          } >> $GITHUB_ENV
 
-    - uses: tale/kubectl-action@v1
-      with:
-        base64-kube-config: ${{ env.EKS_CREDS }}
-    - run: kubectl apply -k demo/k8s/
+      - uses: tale/kubectl-action@v1
+        with:
+          base64-kube-config: ${{ env.EKS_CREDS }}
+      - run: kubectl apply -k demo/k8s/
