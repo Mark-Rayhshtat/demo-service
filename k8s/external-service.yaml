@@ -15,15 +15,12 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
     external-dns.alpha.kubernetes.io/hostname: demo.rayhshtat.com
     external-dns.alpha.kubernetes.io/ttl: "60"
-    # service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http
-    # service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: /healthz
-    # service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8080"
 spec:
   type: LoadBalancer
   ports:
-  - port: 443
-    targetPort: 8080
-    protocol: TCP
-    name: https
+    - port: 443
+      targetPort: 8080
+      protocol: TCP
+      name: https
   selector:
     app: demo-service
