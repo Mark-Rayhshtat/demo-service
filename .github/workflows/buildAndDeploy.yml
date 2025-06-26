@@ -55,8 +55,6 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{env.SHORT_SHA}}
         run: |
-          pwd
-          ls -la
           cd ./k8s
           kustomize edit set image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           cat kustomization.yaml
